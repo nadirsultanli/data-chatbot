@@ -1,0 +1,45 @@
+# Python
+## Environments
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Environment variables
+.env
+*.env
+
+# Node.js (for frontend if applicable)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Frontend build artifacts (if applicable, adjust if your build output is different)
+frontend/build/
+frontend/dist/
+frontend/.cache/
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log

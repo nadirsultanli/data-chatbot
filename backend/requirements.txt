@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+pydantic
+openai
+pandas
+plotly
+requests
+aiofiles
+httpx
+pytest
+pytest-asyncio
