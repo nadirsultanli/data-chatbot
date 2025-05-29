@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -16,105 +16,341 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 
-const ChartRenderer = ({ chartData }) => {
-  if (!chartData || !chartData.data) {
-    return (
-      <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-        <p className="text-gray-500 text-sm">No chart data available</p>
-      </div>
-    );
-  }
+const ChartRenderer = React.memo(({ chartData, isDarkMode = false }) => {
+  // Memoize theme calculation to prevent re-renders
+  const chartTheme = useMemo(() => ({
+    textColor: isDarkMode ? '#ffffff' : '#374151',
+    gridColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : '#f3f4f6',
+    tooltipBg: isDarkMode ? 'rgba(26, 26, 26, 0.95)' : '#ffffff',
+    tooltipBorder: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : '#e5e7eb',
+    tooltipShadow: isDarkMode 
+      ? '0 10px 30px rgba(0, 0, 0, 0.5)' 
+      : '0 10px 30px rgba(0, 0, 0, 0.1)'
+  }), [isDarkMode]);
 
-  const { chart_type, data } = chartData;
+  // Memoize color palette
+  const colors = useMemo(() => isDarkMode ? [
+    '#ffffff', '#e5e7eb', '#d1d5db', '#9ca3af', 
+    '#6b7280', '#4b5563', '#374151', '#1f2937'
+  ] : [
+    '#000000', '#1f2937', '#374151', '#4b5563', 
+    '#6b7280', '#9ca3af', '#d1d5db', '#e5e7eb'
+  ], [isDarkMode]);
 
-  // Clean, minimal chart styling
-  const chartTheme = {
-    textColor: '#374151', // gray-700
-    gridColor: '#f3f4f6', // gray-100
-    tooltipBg: '#ffffff',
-    tooltipBorder: '#e5e7eb', // gray-200
-    tooltipShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-  };
+  // Memoize styles
+  const styles = useMemo(() => `
+    .chart-container {
+      width: 100%;
+      transition: all 0.3s ease;
+    }
 
-  // Professional grayscale color palette
-  const colors = [
-    '#000000', // Black
-    '#374151', // Gray-700
-    '#6b7280', // Gray-500
-    '#9ca3af', // Gray-400
-    '#d1d5db', // Gray-300
-    '#111827', // Gray-900
-    '#1f2937', // Gray-800
-    '#4b5563'  // Gray-600
-  ];
+    .chart-empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 320px;
+      border-radius: 12px;
+      border: 2px dashed ${isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'};
+      background: ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.02)' 
+        : 'rgba(248, 250, 252, 0.5)'};
+      transition: all 0.3s ease;
+      width: 100%;
+    }
 
-  // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }) => {
+    .chart-empty-state:hover {
+      border-color: ${isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
+      background: ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.05)' 
+        : 'rgba(248, 250, 252, 0.8)'};
+    }
+
+    .empty-text {
+      color: ${isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'};
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .chart-header {
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.1)' 
+        : 'rgba(0, 0, 0, 0.08)'};
+    }
+
+    .chart-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: ${isDarkMode ? '#ffffff' : '#1f2937'};
+      margin-bottom: 4px;
+      letter-spacing: -0.5px;
+    }
+
+    .chart-description {
+      font-size: 13px;
+      color: ${isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'};
+      line-height: 1.4;
+    }
+
+    .chart-wrapper {
+      background: ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.02)' 
+        : 'rgba(248, 250, 252, 0.5)'};
+      border: 1px solid ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.08)' 
+        : 'rgba(0, 0, 0, 0.05)'};
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      width: 100%;
+    }
+
+    .chart-wrapper:hover {
+      background: ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.05)' 
+        : 'rgba(248, 250, 252, 0.8)'};
+      border-color: ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.15)' 
+        : 'rgba(0, 0, 0, 0.1)'};
+      transform: translateY(-1px);
+    }
+
+    .chart-footer {
+      margin-top: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: ${isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'};
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .chart-type-badge {
+      background: ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.1)' 
+        : 'rgba(0, 0, 0, 0.05)'};
+      border: 1px solid ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.2)' 
+        : 'rgba(0, 0, 0, 0.1)'};
+      padding: 4px 8px;
+      border-radius: 6px;
+      backdrop-filter: blur(10px);
+    }
+
+    .data-points-info {
+      opacity: 0.8;
+    }
+
+    .glass-tooltip {
+      background: ${isDarkMode 
+        ? 'linear-gradient(145deg, rgba(42, 42, 42, 0.95), rgba(26, 26, 26, 0.95))' 
+        : 'linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95))'};
+      backdrop-filter: blur(20px);
+      border: 1px solid ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.2)' 
+        : 'rgba(0, 0, 0, 0.1)'};
+      border-radius: 12px;
+      padding: 12px 16px;
+      box-shadow: ${chartTheme.tooltipShadow};
+      min-width: 120px;
+    }
+
+    .tooltip-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: ${isDarkMode ? '#ffffff' : '#1f2937'};
+      margin-bottom: 8px;
+      border-bottom: 1px solid ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.1)' 
+        : 'rgba(0, 0, 0, 0.1)'};
+      padding-bottom: 4px;
+    }
+
+    .tooltip-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: ${isDarkMode ? '#e5e7eb' : '#374151'};
+      margin-bottom: 2px;
+    }
+
+    .tooltip-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .tooltip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .tooltip-value {
+      font-weight: 600;
+      color: ${isDarkMode ? '#ffffff' : '#000000'};
+    }
+
+    .pie-chart-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .pie-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 24px;
+      max-width: 100%;
+      width: 100%;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.05)' 
+        : 'rgba(0, 0, 0, 0.03)'};
+      border: 1px solid ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.1)' 
+        : 'rgba(0, 0, 0, 0.08)'};
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+
+    .legend-item:hover {
+      background: ${isDarkMode 
+        ? 'rgba(255, 255, 255, 0.1)' 
+        : 'rgba(0, 0, 0, 0.06)'};
+      transform: translateY(-1px);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-text {
+      font-size: 12px;
+      color: ${isDarkMode ? '#e5e7eb' : '#374151'};
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100px;
+    }
+  `, [isDarkMode, chartTheme.tooltipShadow]);
+
+  // Memoized empty state
+  const EmptyState = useMemo(() => (
+    <div className="chart-empty-state">
+      <p className="empty-text">No chart data available</p>
+    </div>
+  ), []);
+
+  // Memoized Glass Tooltip component
+  const GlassTooltip = useMemo(() => React.memo(({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div 
-          className="bg-white border border-gray-200 rounded-lg shadow-lg p-3"
-          style={{ boxShadow: chartTheme.tooltipShadow }}
-        >
-          <p className="text-sm font-medium text-gray-900 mb-1">{label}</p>
+        <div className="glass-tooltip">
+          <div className="tooltip-label">{label}</div>
           {payload.map((entry, index) => (
-            <p key={index} className="text-sm text-gray-700">
-              <span 
-                className="inline-block w-3 h-3 rounded-full mr-2"
+            <div key={index} className="tooltip-item">
+              <div 
+                className="tooltip-dot"
                 style={{ backgroundColor: entry.color }}
-              ></span>
-              {entry.name}: <span className="font-medium">{entry.value}</span>
-            </p>
+              />
+              <span>{entry.name}: </span>
+              <span className="tooltip-value">{entry.value}</span>
+            </div>
           ))}
         </div>
       );
     }
     return null;
-  };
+  }), []);
 
-  const renderBarChart = () => {
-    const chartData = data.labels?.map((label, index) => ({
+  // Memoized chart renderers
+  const renderBarChart = useMemo(() => {
+    if (!chartData?.data) return null;
+    
+    const chartDataForBar = chartData.data.labels?.map((label, index) => ({
       name: label,
-      value: data.values[index]
+      value: chartData.data.values[index]
     })) || [];
 
     return (
-      <ResponsiveContainer width="100%" height={320}>
-        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
+      <ResponsiveContainer width="100%" height={360}>
+        <BarChart data={chartDataForBar} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            stroke={chartTheme.gridColor}
+            strokeOpacity={0.6}
+          />
           <XAxis 
             dataKey="name" 
-            tick={{ fill: chartTheme.textColor, fontSize: 12 }}
+            tick={{ 
+              fill: chartTheme.textColor, 
+              fontSize: 11,
+              fontWeight: 500
+            }}
             angle={-45}
             textAnchor="end"
             height={80}
             interval={0}
+            axisLine={{ stroke: chartTheme.gridColor }}
+            tickLine={{ stroke: chartTheme.gridColor }}
           />
           <YAxis 
-            tick={{ fill: chartTheme.textColor, fontSize: 12 }}
+            tick={{ 
+              fill: chartTheme.textColor, 
+              fontSize: 11,
+              fontWeight: 500
+            }}
             axisLine={false}
             tickLine={false}
+            tickFormatter={(value) => {
+              if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+              if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+              return value;
+            }}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<GlassTooltip />} />
           <Bar 
             dataKey="value" 
             fill={colors[0]} 
-            radius={[4, 4, 0, 0]}
-            name={data.y_label || 'Value'}
+            radius={[6, 6, 0, 0]}
+            name={chartData.data.y_label || 'Value'}
           />
         </BarChart>
       </ResponsiveContainer>
     );
-  };
+  }, [chartData, chartTheme, colors, GlassTooltip]);
 
-  const renderPieChart = () => {
-    const chartData = data.labels?.map((label, index) => ({
+  const renderPieChart = useMemo(() => {
+    if (!chartData?.data) return null;
+    
+    const chartDataForPie = chartData.data.labels?.map((label, index) => ({
       name: label,
-      value: data.values[index]
+      value: chartData.data.values[index]
     })) || [];
 
-    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-      if (percent < 0.05) return null; // Hide labels for slices < 5%
+    const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+      if (percent < 0.05) return null;
       
       const RADIAN = Math.PI / 180;
       const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -125,11 +361,12 @@ const ChartRenderer = ({ chartData }) => {
         <text 
           x={x} 
           y={y} 
-          fill="white" 
+          fill={isDarkMode ? '#000000' : '#ffffff'} 
           textAnchor={x > cx ? 'start' : 'end'} 
           dominantBaseline="central"
-          fontSize={12}
-          fontWeight="600"
+          fontSize={11}
+          fontWeight="700"
+          textShadow={isDarkMode ? 'none' : '0 1px 2px rgba(0,0,0,0.5)'}
         >
           {`${(percent * 100).toFixed(0)}%`}
         </text>
@@ -137,171 +374,246 @@ const ChartRenderer = ({ chartData }) => {
     };
 
     return (
-      <div className="flex flex-col items-center">
-        <ResponsiveContainer width="100%" height={320}>
+      <div className="pie-chart-container">
+        <ResponsiveContainer width="100%" height={360}>
           <PieChart>
             <Pie
-              data={chartData}
+              data={chartDataForPie}
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={renderCustomizedLabel}
-              outerRadius={100}
+              label={renderCustomLabel}
+              outerRadius={120}
               fill="#8884d8"
               dataKey="value"
-              stroke="#ffffff"
-              strokeWidth={2}
+              stroke={isDarkMode ? '#1a1a1a' : '#ffffff'}
+              strokeWidth={3}
             >
-              {chartData.map((entry, index) => (
+              {chartDataForPie.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<GlassTooltip />} />
           </PieChart>
         </ResponsiveContainer>
         
-        {/* Legend */}
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 max-w-md">
-          {chartData.map((item, index) => (
-            <div key={index} className="flex items-center space-x-2">
+        <div className="pie-legend">
+          {chartDataForPie.map((item, index) => (
+            <div key={index} className="legend-item">
               <div 
-                className="w-3 h-3 rounded-full"
+                className="legend-dot"
                 style={{ backgroundColor: colors[index % colors.length] }}
-              ></div>
-              <span className="text-sm text-gray-700 truncate max-w-24">{item.name}</span>
+              />
+              <span className="legend-text" title={item.name}>
+                {item.name}
+              </span>
             </div>
           ))}
         </div>
       </div>
     );
-  };
+  }, [chartData, colors, isDarkMode, GlassTooltip]);
 
-  const renderLineChart = () => {
-    const chartData = data.labels?.map((label, index) => ({
+  const renderLineChart = useMemo(() => {
+    if (!chartData?.data) return null;
+    
+    const chartDataForLine = chartData.data.labels?.map((label, index) => ({
       name: label,
-      value: data.values[index]
+      value: chartData.data.values[index]
     })) || [];
 
     return (
-      <ResponsiveContainer width="100%" height={320}>
-        <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
+      <ResponsiveContainer width="100%" height={360}>
+        <LineChart data={chartDataForLine} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            stroke={chartTheme.gridColor}
+            strokeOpacity={0.6}
+          />
           <XAxis 
             dataKey="name" 
-            tick={{ fill: chartTheme.textColor, fontSize: 12 }}
+            tick={{ 
+              fill: chartTheme.textColor, 
+              fontSize: 11,
+              fontWeight: 500
+            }}
             angle={-45}
             textAnchor="end"
             height={80}
             interval={0}
+            axisLine={{ stroke: chartTheme.gridColor }}
+            tickLine={{ stroke: chartTheme.gridColor }}
           />
           <YAxis 
-            tick={{ fill: chartTheme.textColor, fontSize: 12 }}
+            tick={{ 
+              fill: chartTheme.textColor, 
+              fontSize: 11,
+              fontWeight: 500
+            }}
             axisLine={false}
             tickLine={false}
+            tickFormatter={(value) => {
+              if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+              if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+              return value;
+            }}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<GlassTooltip />} />
           <Line 
             type="monotone" 
             dataKey="value" 
             stroke={colors[0]} 
             strokeWidth={3} 
-            dot={{ fill: colors[0], strokeWidth: 2, r: 5 }}
-            activeDot={{ r: 7, stroke: colors[0], strokeWidth: 2 }}
-            name={data.y_label || 'Value'}
+            dot={{ 
+              fill: colors[0], 
+              strokeWidth: 2, 
+              r: 6,
+              stroke: isDarkMode ? '#1a1a1a' : '#ffffff'
+            }}
+            activeDot={{ 
+              r: 8, 
+              stroke: colors[0], 
+              strokeWidth: 3,
+              fill: isDarkMode ? '#1a1a1a' : '#ffffff'
+            }}
+            name={chartData.data.y_label || 'Value'}
           />
         </LineChart>
       </ResponsiveContainer>
     );
-  };
+  }, [chartData, chartTheme, colors, isDarkMode, GlassTooltip]);
 
-  const renderScatterChart = () => {
-    const chartData = data.x_values?.map((x, index) => ({
+  const renderScatterChart = useMemo(() => {
+    if (!chartData?.data) return null;
+    
+    const chartDataForScatter = chartData.data.x_values?.map((x, index) => ({
       x: x,
-      y: data.y_values[index]
+      y: chartData.data.y_values[index]
     })) || [];
 
     return (
-      <ResponsiveContainer width="100%" height={320}>
-        <ScatterChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
+      <ResponsiveContainer width="100%" height={360}>
+        <ScatterChart data={chartDataForScatter} margin={{ top: 20, right: 30, left: 40, bottom: 80 }}>
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            stroke={chartTheme.gridColor}
+            strokeOpacity={0.6}
+          />
           <XAxis 
             dataKey="x" 
-            tick={{ fill: chartTheme.textColor, fontSize: 12 }}
-            name={data.x_label || 'X Axis'}
+            tick={{ 
+              fill: chartTheme.textColor, 
+              fontSize: 11,
+              fontWeight: 500
+            }}
+            name={chartData.data.x_label || 'X Axis'}
             label={{ 
-              value: data.x_label || 'X Axis', 
+              value: chartData.data.x_label || 'X Axis', 
               position: 'insideBottom', 
               offset: -10, 
-              style: { textAnchor: 'middle', fill: chartTheme.textColor }
+              style: { 
+                textAnchor: 'middle', 
+                fill: chartTheme.textColor,
+                fontSize: '12px',
+                fontWeight: '600'
+              }
             }}
+            axisLine={{ stroke: chartTheme.gridColor }}
+            tickLine={{ stroke: chartTheme.gridColor }}
           />
           <YAxis 
             dataKey="y" 
-            tick={{ fill: chartTheme.textColor, fontSize: 12 }}
-            name={data.y_label || 'Y Axis'}
+            tick={{ 
+              fill: chartTheme.textColor, 
+              fontSize: 11,
+              fontWeight: 500
+            }}
+            name={chartData.data.y_label || 'Y Axis'}
             label={{ 
-              value: data.y_label || 'Y Axis', 
+              value: chartData.data.y_label || 'Y Axis', 
               angle: -90, 
               position: 'insideLeft',
-              style: { textAnchor: 'middle', fill: chartTheme.textColor }
+              style: { 
+                textAnchor: 'middle', 
+                fill: chartTheme.textColor,
+                fontSize: '12px',
+                fontWeight: '600'
+              }
             }}
+            axisLine={false}
+            tickLine={false}
           />
           <Tooltip 
-            content={<CustomTooltip />}
-            formatter={(value, name) => [value, name === 'y' ? data.y_label || 'Y' : data.x_label || 'X']}
+            content={<GlassTooltip />}
+            formatter={(value, name) => [
+              value, 
+              name === 'y' ? chartData.data.y_label || 'Y' : chartData.data.x_label || 'X'
+            ]}
           />
           <Scatter 
             dataKey="y" 
             fill={colors[0]}
-            stroke={colors[0]}
-            strokeWidth={1}
+            stroke={isDarkMode ? '#1a1a1a' : '#ffffff'}
+            strokeWidth={2}
           />
         </ScatterChart>
       </ResponsiveContainer>
     );
-  };
+  }, [chartData, chartTheme, colors, isDarkMode, GlassTooltip]);
 
-  const renderChart = () => {
-    switch (chart_type?.toLowerCase()) {
+  const renderChart = useMemo(() => {
+    if (!chartData?.data) return EmptyState;
+    
+    switch (chartData.chart_type?.toLowerCase()) {
       case 'bar':
-        return renderBarChart();
+        return renderBarChart;
       case 'pie':
-        return renderPieChart();
+        return renderPieChart;
       case 'line':
-        return renderLineChart();
+        return renderLineChart;
       case 'scatter':
-        return renderScatterChart();
+        return renderScatterChart;
       default:
-        return renderBarChart(); // Default to bar chart
+        return renderBarChart;
     }
-  };
+  }, [chartData, renderBarChart, renderPieChart, renderLineChart, renderScatterChart, EmptyState]);
+
+  if (!chartData || !chartData.data) {
+    return EmptyState;
+  }
 
   return (
-    <div className="w-full">
+    <div className="chart-container">
+      <style>{styles}</style>
+
       {/* Chart Title */}
       {chartData.title && (
-        <div className="mb-4">
-          <h4 className="text-lg font-semibold text-gray-900 mb-1">{chartData.title}</h4>
+        <div className="chart-header">
+          <h4 className="chart-title">{chartData.title}</h4>
           {chartData.description && (
-            <p className="text-sm text-gray-600">{chartData.description}</p>
+            <p className="chart-description">{chartData.description}</p>
           )}
         </div>
       )}
       
       {/* Chart Container */}
-      <div className="bg-white border border-gray-100 rounded-lg p-4">
-        {renderChart()}
+      <div className="chart-wrapper">
+        {renderChart}
       </div>
       
       {/* Chart Info */}
-      <div className="mt-3 flex justify-between items-center text-xs text-gray-500">
-        <span>Chart Type: {chart_type?.toUpperCase()}</span>
-        <span>
-          {data.labels ? `${data.labels.length} data points` : 'Interactive chart'}
+      <div className="chart-footer">
+        <span className="chart-type-badge">
+          {chartData.chart_type?.toUpperCase() || 'CHART'}
+        </span>
+        <span className="data-points-info">
+          {chartData.data.labels ? `${chartData.data.labels.length} data points` : 'Interactive visualization'}
         </span>
       </div>
     </div>
   );
-};
+});
+
+ChartRenderer.displayName = 'ChartRenderer';
 
 export default ChartRenderer;
